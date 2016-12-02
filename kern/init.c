@@ -8,6 +8,7 @@
 #include <kern/console.h>
 
 // Test the stack backtrace function (lab 1 only)
+// for each recursive call, there are 8 words(32 bytes) stack allocated
 void
 test_backtrace(int x)
 {
@@ -33,6 +34,7 @@ i386_init(void)
 	// Can't call cprintf until after we do this!
 	cons_init();
 
+	// cprintf -> vcprintf -> vprintfmt
 	cprintf("6828 decimal is %o octal!\n", 6828);
 
 	// Test the stack backtrace function (lab 1 only)

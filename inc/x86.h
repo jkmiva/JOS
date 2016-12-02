@@ -3,6 +3,15 @@
 
 #include <inc/types.h>
 
+// for lab1 e11
+//    static inline uint32_t
+//    read_word(uint32_t *addr)
+//   {
+//	    uint32_t data;
+//	    asm volatile("movl %1,%0" : "=r" (val) : "r" (addr));
+//	    return data;
+//   }
+
 static inline void
 breakpoint(void)
 {

@@ -42,17 +42,17 @@ seta20.2:
   outb    %al,$0x60
 
   # Switch from real to protected mode, using a bootstrap GDT
-  # and segment translation that makes virtual addresses 
-  # identical to their physical addresses, so that the 
+  # and segment translation that makes virtual addresses
+  # identical to their physical addresses, so that the
   # effective memory map does not change during the switch.
   lgdt    gdtdesc
   movl    %cr0, %eax
   orl     $CR0_PE_ON, %eax
   movl    %eax, %cr0
-  
+
   # Jump to next instruction, but in 32-bit code segment.
   # Switches processor into 32-bit mode.
-  ljmp    $PROT_MODE_CSEG, $protcseg
+  ljmp    $PROT_MODE_CSEG, $protcseg							#lab1 exercise5: if change boot loader's link address, break at this command
 
   .code32                     # Assemble for 32-bit mode
 protcseg:
@@ -63,7 +63,7 @@ protcseg:
   movw    %ax, %fs                # -> FS
   movw    %ax, %gs                # -> GS
   movw    %ax, %ss                # -> SS: Stack Segment
-  
+
   # Set up the stack pointer and call into C.
   movl    $start, %esp
   call bootmain
@@ -82,4 +82,3 @@ gdt:
 gdtdesc:
   .word   0x17                            # sizeof(gdt) - 1
   .long   gdt                             # address gdt
-
