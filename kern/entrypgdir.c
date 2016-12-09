@@ -18,6 +18,8 @@ pte_t entry_pgtable[NPTENTRIES];
 // here, rather than the more standard "x | PTE_P".  Everywhere else
 // you should use "|" to combine flags.
 __attribute__((__aligned__(PGSIZE)))
+//PDXSHIFT is 22 which means each entry map 2^22(4M) space. here two entries
+// point to the same pagetable.
 pde_t entry_pgdir[NPDENTRIES] = {
 	// Map VA's [0, 4MB) to PA's [0, 4MB)
 	[0]
@@ -1056,4 +1058,3 @@ pte_t entry_pgtable[NPTENTRIES] = {
 	0x3fe000 | PTE_P | PTE_W,
 	0x3ff000 | PTE_P | PTE_W,
 };
-
