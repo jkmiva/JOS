@@ -11,6 +11,7 @@
 
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
+static size_t aPages;	// available physical pages (added myself)
 static size_t npages_basemem;	// Amount of base memory (in pages)
 
 // These variables are set in mem_init()
@@ -95,15 +96,22 @@ boot_alloc(uint32_t n)
 	if (!nextfree) {
 		extern char end[];
 		nextfree = ROUNDUP((char *) end, PGSIZE);
+		aPages = npages;	// available pages
 	}
 
 	// Allocate a chunk large enough to hold 'n' bytes, then update
 	// nextfree.  Make sure nextfree is kept aligned
 	// to a multiple of PGSIZE.
 	//
-	// LAB 2: Your code here.
+	// LAB 2: Your code here.#Done
+	if (ROUNDUP(n, PGSIZE) > aPages * PGSIZE) {
+		panic ("no enough memory");
+	}
+	result = nextfree;
+	nextfree += ROUNDUP(n, PGSIZE);
+	aPages -= (ROUNDUP(n, PGSIZE)/PGSIZE);
 
-	return NULL;
+	return result;
 }
 
 // Set up a two-level page table:
@@ -125,7 +133,7 @@ mem_init(void)
 	i386_detect_memory();
 
 	// Remove this line when you're ready to test this function.
-	panic("mem_init: This function is not finished\n");
+	// panic("mem_init: This function is not finished\n");
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -147,8 +155,9 @@ mem_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.  Use memset
 	// to initialize all fields of each struct PageInfo to 0.
-	// Your code goes here:
-
+	// Your code goes here:#Done
+	pages = (struct PageInfo *)boot_alloc(npages * sizeof(struct PageInfo));
+	memset(pages, 0, npages * sizeof(struct PageInfo));
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -172,6 +181,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
+	
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -252,11 +262,22 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 	size_t i;
+	
 	for (i = 0; i < npages; i++) {
-		pages[i].pp_ref = 0;
+		if (i == 0) continue;	// page[0] is in use
+		/*
+		 * IO hole is included.
+		 * PADDR of boot_alloc(0) is the first free pyhsical addr
+		 * after .text, .data, initial page directory and array of
+		 * npage structure info. 
+		 */
+		if (i >= PGNUM(IOPHYSMEM) && i < PGNUM(PADDR(boot_alloc(0)))) continue;	
+		
+		pages[i].pp_ref = 0;  // at this moment, is it valid? #fixme
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
+	
 }
 
 //
@@ -274,8 +295,21 @@ page_init(void)
 struct PageInfo *
 page_alloc(int alloc_flags)
 {
-	// Fill this function in
-	return 0;
+	// allocate from the head of page_free_list
+	
+	if (!page_free_list) {
+		return NULL;
+	}
+	
+	struct PageInfo *ret = page_free_list;
+	page_free_list = page_free_list->pp_link;
+	
+	if (alloc_flags & ALLOC_ZERO) {
+		memset(page2kva(ret), 0, PGSIZE);
+	}
+	ret->pp_link = NULL;
+	
+	return ret;
 }
 
 //
@@ -288,6 +322,15 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
+	
+	// free to the head of page_free_list
+	
+	if (pp->pp_ref != 0 || pp->pp_link != NULL) {
+		panic("ERROR! can't free this page");
+	}
+	
+	pp->pp_link = page_free_list;
+	page_free_list = pp;
 }
 
 //
