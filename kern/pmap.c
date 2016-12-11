@@ -383,7 +383,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 		} else {
 			ptePageInfo->pp_ref++;
 			*pde = page2pa(ptePageInfo) | PTE_P | PTE_U;
-			pte = page2kva(ptePageInfo) + PTX(va);	// page table base + index
+			pte = page2kva(ptePageInfo);	// page table base + index
 		}
 	}
 	// pte exists
