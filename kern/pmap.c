@@ -370,7 +370,26 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	return NULL;
+	pde_t *pde = pgdir + PDX(va);
+	pte_t *pte;
+	if (!(*pde & PTE_P) && !create) {	// if not exist and creat == false, return NULL
+		return NULL;
+	}
+	if (!(*pde & PTE_P) &&  create) {	// if not exist and creat == true, allocate new pte
+		struct PageInfo* ptePageInfo;
+		ptePageInfo = page_alloc(ALLOC_ZERO);
+		if (!ptePageInfo) {	// alloc fail, return NULL
+			return NULL;
+		} else {
+			ptePageInfo->pp_ref++;
+			*pde = page2pa(ptePageInfo) | PTE_P | PTE_U;
+			pte = page2kva(ptePageInfo);	// page table base + index
+		}
+	}
+	// pte exists
+	pte = KADDR(PTE_ADDR(*pde));
+	
+	return pte + PTX(va);
 }
 
 //
@@ -388,6 +407,15 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	pte_t* pte;
+	while (size > 0) {
+		pte = pgdir_walk(pgdir,(const void*)va,true);
+		*pte = pa | perm | PTE_P;
+		va += PGSIZE;
+		if (va > (0xffffffff - PGSIZE)) break;
+		pa += PGSIZE;
+		size -= PGSIZE;
+	}
 }
 
 //
@@ -419,6 +447,18 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
 	// Fill this function in
+	pte_t* pte;
+	pte = pgdir_walk(pgdir,va,true);
+	if (!pte) {
+		return -E_NO_MEM;
+	}
+	if (pa2page(*pte) != pp) {
+		page_remove(pgdir,va);
+		pp->pp_ref++;
+	} else {
+		tlb_invalidate(pgdir,va);
+	}
+	*pte = page2pa(pp) | perm | PTE_P;
 	return 0;
 }
 
@@ -437,7 +477,14 @@ struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	return NULL;
+	pte_t* pte = pgdir_walk(pgdir,va,false);
+	if (!pte) {
+		return NULL;
+	}
+	if (!pte_store) {
+		*pte_store = pte;
+	}
+	return pa2page(*pte);
 }
 
 //
@@ -459,6 +506,16 @@ void
 page_remove(pde_t *pgdir, void *va)
 {
 	// Fill this function in
+	pte_t* pte = pgdir_walk(pgdir,va,false);
+	if (!pte) {
+		return;
+	}
+	struct PageInfo* ptePageInfo = pa2page(*pte);
+	if(--ptePageInfo->pp_ref == 0) {
+		page_free(ptePageInfo);
+	}
+	*pte = 0;
+	tlb_invalidate(pgdir,va);
 }
 
 //
