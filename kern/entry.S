@@ -4,16 +4,16 @@
 #include <inc/memlayout.h>
 #include <inc/trap.h>
 
-# Shift Right Logical 
+# Shift Right Logical
 #define SRL(val, shamt)		(((val) >> (shamt)) & ~(-1 << (32 - (shamt))))
 
 
 ###################################################################
-# The kernel (this code) is linked at address ~(KERNBASE + 1 Meg), 
+# The kernel (this code) is linked at address ~(KERNBASE + 1 Meg),
 # but the bootloader loads it at address ~1 Meg.
-#	
+#
 # RELOC(x) maps a symbol x from its link address to its actual
-# location in physical memory (its load address).	 
+# location in physical memory (its load address).
 ###################################################################
 
 #define	RELOC(x) ((x) - KERNBASE)
@@ -28,7 +28,7 @@
 
 .text
 
-# The Multiboot header
+# The Multiboot header										#lab1 exercise6: first 0x0c bytes is magic number for multiboot specification
 .align 4
 .long MULTIBOOT_HEADER_MAGIC
 .long MULTIBOOT_HEADER_FLAGS
@@ -38,7 +38,7 @@
 # virtual memory when the bootloader enters this code, we need the
 # bootloader to jump to the *physical* address of the entry point.
 .globl		_start
-_start = RELOC(entry)
+_start = RELOC(entry)										#manually page
 
 .globl entry
 entry:
@@ -55,7 +55,7 @@ entry:
 
 	# Load the physical address of entry_pgdir into cr3.  entry_pgdir
 	# is defined in entrypgdir.c.
-	movl	$(RELOC(entry_pgdir)), %eax
+	movl	$(RELOC(entry_pgdir)), %eax							# manually page
 	movl	%eax, %cr3
 	# Turn on paging.
 	movl	%cr0, %eax
@@ -63,9 +63,10 @@ entry:
 	movl	%eax, %cr0
 
 	# Now paging is enabled, but we're still running at a low EIP
-	# (why is this okay?).  Jump up above KERNBASE before entering
-	# C code.
-	mov	$relocated, %eax
+	# (why is this okay? hjm: because both low end ~4M address and high end			<----- Answer
+	# kernbase+4m address are mapped to pyhsical address).  Jump up above			#lab1 Exercise7, after mov $relocated, %eax, paging is active.
+	# KERNBASE before entering C code.							# now both 0xf0100000 and 0x100000 point to the same linear(physical) address 0x100000
+	mov	$relocated, %eax								# the content is 0x1BADB002 which is a magic numner indicating multiboot specification
 	jmp	*%eax
 relocated:
 
@@ -86,12 +87,11 @@ spin:	jmp	spin
 
 .data
 ###################################################################
-# boot stack
+# boot stack											# kernel stack , stack top 0xf0110000 , stack end 0xf010800
 ###################################################################
 	.p2align	PGSHIFT		# force page alignment
 	.globl		bootstack
 bootstack:
 	.space		KSTKSIZE
-	.globl		bootstacktop   
+	.globl		bootstacktop
 bootstacktop:
-
