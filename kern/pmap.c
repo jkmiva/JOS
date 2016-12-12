@@ -180,8 +180,8 @@ mem_init(void)
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
-	// Your code goes here:
-	
+	// Your code goes here:#Done
+	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -193,7 +193,8 @@ mem_init(void)
 	//       the kernel overflows its stack, it will fault rather than
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
-	// Your code goes here:
+	// Your code goes here:#Done
+	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -202,7 +203,8 @@ mem_init(void)
 	// We might not have 2^32 - KERNBASE bytes of physical memory, but
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
-	// Your code goes here:
+	// Your code goes here:#Done
+	boot_map_region(kern_pgdir, KERNBASE, 0xfffffff-KERNBASE, 0, PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -382,7 +384,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 			return NULL;
 		} else {
 			ptePageInfo->pp_ref++;
-			*pde = page2pa(ptePageInfo) | PTE_P | PTE_U;
+			*pde = page2pa(ptePageInfo) | PTE_P | PTE_U | PTE_W;
 			pte = page2kva(ptePageInfo);	// page table base + index
 		}
 	}
@@ -704,6 +706,7 @@ check_kern_pgdir(void)
 	assert(check_va2pa(pgdir, KSTACKTOP - PTSIZE) == ~0);
 
 	// check PDE permissions
+
 	for (i = 0; i < NPDENTRIES; i++) {
 		switch (i) {
 		case PDX(UVPT):
