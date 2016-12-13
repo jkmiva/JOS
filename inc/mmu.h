@@ -135,6 +135,8 @@
 
 /*
  * Macros to build GDT entries in assembly.
+ * .word is 2 bytes, here total 8 bytes which is the size of an
+ * entry in gdt[]
  */
 #define SEG_NULL						\
 	.word 0, 0;						\
