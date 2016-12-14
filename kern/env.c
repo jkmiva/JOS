@@ -364,7 +364,7 @@ load_icode(struct Env *e, uint8_t *binary)
 	// entry point
 	e->env_tf.tf_eip = elf->e_entry;
 	
-	lcr3(PADDR(e->env_pgdir));
+	lcr3(PADDR(e->env_pgdir));	// following memory operation need the new user environment's pgdir
 	
 	struct Proghdr *ph, *eph;
 	// load each program segment (ignores ph flags)
@@ -392,6 +392,7 @@ load_icode(struct Env *e, uint8_t *binary)
 	// LAB 3: Your code here.
 	region_alloc(e, (void *)(USTACKTOP-PGSIZE), PGSIZE);
 	
+	// restore %cr3 to contain kern_pgdir after loading ELF of new environment
 	lcr3(PADDR(kern_pgdir));
 	
 }
