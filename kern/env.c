@@ -126,7 +126,7 @@ env_init(void)
 			envs[i].env_link = &envs[i+1];
 		}
 	}
-	env_free_list = envs;
+	env_free_list = &envs[0];
 
 	// Per-CPU part of the initialization
 	env_init_percpu();
@@ -195,7 +195,8 @@ env_setup_vm(struct Env *e)
 	
 	memmove(e->env_pgdir, kern_pgdir, PGSIZE);	// copy from kern_pgdir
 	
-	memset(e->env_pgdir, 0, 4 * PDX(UTOP));	// clear content below UTOP 
+	
+	//memset(e->env_pgdir, 0, 4 * PDX(UTOP));	// clear content below UTOP 
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
