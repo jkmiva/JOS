@@ -47,10 +47,58 @@
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+ /* trap handler with error code */
+ 
+TRAPHANDLER(vector_8,  T_DBLFLT)
+TRAPHANDLER(vector_10, T_TSS)
+TRAPHANDLER(vector_11, T_SEGNP)
+TRAPHANDLER(vector_12, T_STACK)
+TRAPHANDLER(vector_13, T_GPFLT)
+TRAPHANDLER(vector_14, T_PGFLT)
+TRAPHANDLER(vector_17, T_ALIGN)
+
+/* trap handler without error code */
+TRAPHANDLER_NOEC(vector_0, T_DIVIDE);
+TRAPHANDLER_NOEC(vector_1, T_DEBUG)
+TRAPHANDLER_NOEC(vector_2, T_NMI)
+TRAPHANDLER_NOEC(vector_3, T_BRKPT)
+TRAPHANDLER_NOEC(vector_4, T_OFLOW)
+TRAPHANDLER_NOEC(vector_5, T_BOUND)
+TRAPHANDLER_NOEC(vector_6, T_ILLOP)
+TRAPHANDLER_NOEC(vector_7, T_DEVICE)
+
+TRAPHANDLER_NOEC(vector_16, T_FPERR)
+TRAPHANDLER_NOEC(vector_18, T_MCHK)
+TRAPHANDLER_NOEC(vector_19, T_SIMDERR)
+
+TRAPHANDLER_NOEC(vector_32, IRQ_OFFSET+IRQ_TIMER)	// offset 0
+TRAPHANDLER_NOEC(vector_33, IRQ_OFFSET+IRQ_KBD)
+TRAPHANDLER_NOEC(vector_36, IRQ_OFFSET+IRQ_SERIAL)
+TRAPHANDLER_NOEC(vector_39, IRQ_OFFSET+IRQ_SPURIOUS)
+TRAPHANDLER_NOEC(vector_46, IRQ_OFFSET+IRQ_IDE)
+TRAPHANDLER_NOEC(vector_51, IRQ_OFFSET+IRQ_ERROR)
+
+TRAPHANDLER_NOEC(vector_48, T_SYSCALL)	// int 0x30 syscall
+
+
 
 
 
 /*
  * Lab 3: Your code here for _alltraps
  */
+ 
+ _alltraps:
+# push values to make the stack look like a struct Trapframe
+# pushal pushes struct PushRegs, then %es , %ds  and pointer to trapFrame
+	pushl %ds
+	pushl %es
+	pushal
+# load GD_KD into %ds and %es
+	movl $GD_KD, %eax
+	movw %ax, %ds
+	movw %ax, %es
+# pushl %esp to pass a pointer to the Trapframe as an argument to trap()
+	pushl %esp
+	call trap
 
