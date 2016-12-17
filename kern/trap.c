@@ -59,7 +59,7 @@ static const char *trapname(int trapno)
 }
 
 /*
- * each entry in idt[] is a 'gate' it can either be trap gate, 
+ * each entry in idt[] is a 'gate' it can either be trap gate,
  * interrupt gate or task gate. In JOS, we use struct Gatedesc denote them.
  */
  /*
@@ -92,14 +92,14 @@ static const char *trapname(int trapno)
   void vector_39();
   void vector_46();
   void vector_51();
-  
+
 void
 trap_init(void)
 {
 	extern struct Segdesc gdt[];
-	
-	// treat all traps as 'interrupt gate' which will clear IF, 
-	// prevent following interrupt
+
+	// treat all traps as 'interrupt gate' which will clear IF,
+	// prevent following muskable interrupt
 
 	// LAB 3: Your code here.
 	SETGATE(idt[0], 0, GD_KT, vector_0, 0);
@@ -122,19 +122,19 @@ trap_init(void)
 	SETGATE(idt[17], 0, GD_KT, vector_17, 0);
 	SETGATE(idt[18], 0, GD_KT, vector_18, 0);
 	SETGATE(idt[19], 0, GD_KT, vector_19, 0);
-	
+
 	SETGATE(idt[48], 0, GD_KT, vector_48, 3);
-	
+
 	SETGATE(idt[32], 0, GD_KT, vector_32, 0);
 	SETGATE(idt[33], 0, GD_KT, vector_33, 0);
 	SETGATE(idt[36], 0, GD_KT, vector_36, 0);
 	SETGATE(idt[39], 0, GD_KT, vector_39, 0);
 	SETGATE(idt[46], 0, GD_KT, vector_46, 0);
 	SETGATE(idt[51], 0, GD_KT, vector_51, 0);
-	
-	
 
-	// Per-CPU setup 
+
+
+	// Per-CPU setup
 	trap_init_percpu();
 }
 
@@ -223,8 +223,8 @@ trap_dispatch(struct Trapframe *tf)
 		}
 		case T_SYSCALL: {
 			// syscall in kern/syscall.c
-			
-            int32_t ret = syscall(tf->tf_regs.reg_eax, 
+			int32_t ret = \
+				syscall(tf->tf_regs.reg_eax,
 					tf->tf_regs.reg_edx,
 					tf->tf_regs.reg_ecx,
 					tf->tf_regs.reg_ebx,
@@ -310,4 +310,3 @@ page_fault_handler(struct Trapframe *tf)
 	print_trapframe(tf);
 	env_destroy(curenv);
 }
-
