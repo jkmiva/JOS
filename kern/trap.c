@@ -99,7 +99,7 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 	
 	// treat all traps as 'interrupt gate' which will clear IF, 
-	// prevent following interrupt
+	// prevent following muskable interrupt
 
 	// LAB 3: Your code here.
 	SETGATE(idt[0], 0, GD_KT, vector_0, 0);
