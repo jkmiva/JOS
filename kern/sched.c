@@ -29,6 +29,26 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
+	// navie Round-Robin
+	
+	int nextenv_index;
+	int curenv_index;
+	if (curenv == NULL) {
+		nextenv_index = 0;
+	} else {
+		curenv_index = ENVX(curenv->env_id);	// fix a bug... must check if curenv is not NULL before apply ENVX()! 
+		nextenv_index = (curenv_index + 1) % NENV;
+	}
+	int i;
+	for (i = 0; i < NENV; i++) {	// loop through envs[] cycle, try to find a runnable env
+		if(envs[nextenv_index].env_status == ENV_RUNNABLE) {
+			env_run(&envs[nextenv_index]);
+		}
+		nextenv_index = (nextenv_index + 1) % NENV;
+	}
+	if (curenv != NULL && curenv->env_status == ENV_RUNNING) {
+		env_run(curenv);
+	}
 
 	// sched_halt never returns
 	sched_halt();

@@ -274,7 +274,11 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
-
+	int i;
+	for (i = 0; i < NCPU; i++) { 
+		uintptr_t kstacktop_i = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
+		boot_map_region(kern_pgdir, kstacktop_i-KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W);
+	}
 }
 
 // --------------------------------------------------------------
@@ -324,6 +328,8 @@ page_init(void)
 		 * npage structure info. 
 		 */
 		if (i >= PGNUM(IOPHYSMEM) && i < PGNUM(PADDR(boot_alloc(0)))) continue;	
+		
+		if (i == PGNUM(MPENTRY_PADDR)) continue;	// page for entry code of APs
 		
 		pages[i].pp_ref = 0;  // at this moment, is it valid? #fixme
 		pages[i].pp_link = page_free_list;
@@ -614,7 +620,18 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+	// Usage:
+	// lapicaddr is the physical address of the LAPIC's 4K MMIO
+	// region.  Map it in to virtual memory so we can access it.
+	// lapic = mmio_map_region(lapicaddr, 4096);
+	size = ROUNDUP(size, PGSIZE);
+	if ((base+size) > MMIOLIM) {
+		panic("exceed MMIO region!");
+	}
+	boot_map_region(kern_pgdir, base, size, pa, PTE_PCD|PTE_PWT|PTE_W);
+	void *ret = (void *)base;
+	base += size;
+	return ret;
 }
 
 static uintptr_t user_mem_check_addr;
