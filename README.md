@@ -22,3 +22,4 @@ In JOS, individual environments do not have their own kernel stacks, there can b
  + set up MP entry code, kernel stack and TSS for different CPUs
  + use a big kernel lock that only one environment can enter kernel mode
  + implement Round-Robin scheduling
+ + add system calls for environment creation
