@@ -539,9 +539,16 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 	if (!pte) {
 		return NULL;
 	}
-	if (!pte_store) {
+	if (!(*pte & PTE_P)) { // no page mapped at va
+		return NULL;
+	}
+	if (pte_store) {	//fix a bug!!! no "!" here,made same bug twice...terrible day
 		*pte_store = pte;
 	}
+	//cprintf("%x    *pte\n", *pte);
+	//cprintf("%x    PTE_ADDR(*pte)\n", PTE_ADDR(*pte));
+	//cprintf("%x    pa2page(*pte)\n", pa2page(*pte));
+	//cprintf("%x    pa2page(pp)\n", pa2page(PTE_ADDR(*pte)));
 	return pa2page(*pte);
 }
 
