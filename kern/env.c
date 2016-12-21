@@ -374,10 +374,10 @@ load_icode(struct Env *e, uint8_t *binary)
 	if (elf->e_magic != ELF_MAGIC) {
 		panic("invalid elf file!");
 	}
-	// entry point
-	e->env_tf.tf_eip = elf->e_entry;
 	
 	lcr3(PADDR(e->env_pgdir));	// following memory operation need the new user environment's pgdir
+	// entry point
+	e->env_tf.tf_eip = elf->e_entry;
 	
 	struct Proghdr *ph, *eph;
 	// load each program segment (ignores ph flags)
