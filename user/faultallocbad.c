@@ -1,5 +1,6 @@
 // test user-level fault handler -- alloc pages to fix faults
 // doesn't work because we sys_cputs instead of cprintf (exercise: why?)
+// call sys func in user mode without 'INT' ,no permission to modify the area.
 
 #include <inc/lib.h>
 
