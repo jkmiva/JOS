@@ -23,3 +23,5 @@ In JOS, individual environments do not have their own kernel stacks, there can b
  + use a big kernel lock that only one environment can enter kernel mode
  + implement Round-Robin scheduling
  + add system calls for environment creation
+ + implement Copy-on-Write Fork
+   + on _fork()_ the kernel only copy the address space __mappings__ not its contents and mark the pages __read-only__.

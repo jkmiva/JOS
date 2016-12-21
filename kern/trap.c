@@ -265,7 +265,6 @@ trap_dispatch(struct Trapframe *tf)
 			break;
 		}
 		case T_BRKPT: {
-			print_trapframe(tf);
 			monitor(tf);
 			break;
 		}
@@ -402,10 +401,39 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+	if (    curenv->env_pgfault_upcall == NULL	// upcall does not exist
+		 || (tf->tf_esp > USTACKTOP && tf->tf_esp < (UXSTACKTOP - PGSIZE)))	// exceed valid UXSTACK
+	{
+			cprintf("[%08x] user fault va %08x ip %08x\n",
+				curenv->env_id, fault_va, tf->tf_eip);
+			print_trapframe(tf);
+			env_destroy(curenv);
+	}
+	// check where does the page fault occurs
+	uint32_t stack_top;
+	if (tf->tf_esp < USTACKTOP) {	// initial page fault
+		stack_top = UXSTACKTOP - sizeof(struct UTrapframe);
+	} else {	// recursively page fault
+		stack_top = tf->tf_esp - 4 - sizeof(struct UTrapframe);	// 4 here is an empty word seperate two page fault stackFrame
+	}
+	// check permission
+	user_mem_assert(curenv, (void *)stack_top, sizeof(struct UTrapframe), PTE_W | PTE_U);
+	
+	struct UTrapframe *utf = (struct UTrapframe *)stack_top;
+	utf->utf_fault_va = fault_va;
+	utf->utf_err = tf->tf_err;
+	utf->utf_regs = tf->tf_regs;
+	utf->utf_eip = tf->tf_eip;
+	utf->utf_eflags = tf->tf_eflags;
+	utf->utf_esp = tf->tf_esp;
+	
+	tf->tf_esp = (uintptr_t)stack_top;
+	tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;	// entry point of pagefault handler
+	env_run(curenv);
 
 	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-	env_destroy(curenv);
+	//cprintf("[%08x] user fault va %08x ip %08x\n",
+	//	curenv->env_id, fault_va, tf->tf_eip);
+	//print_trapframe(tf);
+	//env_destroy(curenv);
 }
