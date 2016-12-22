@@ -280,6 +280,11 @@ trap_dispatch(struct Trapframe *tf)
 			tf->tf_regs.reg_eax = ret;
 			break;
 		}
+		case IRQ_OFFSET+IRQ_TIMER: {
+			lapic_eoi();	// ack interrupt through lapic
+			sched_yield();
+			break;
+		}
 		default: {
 			print_trapframe(tf);
 			if (tf->tf_cs == GD_KT)

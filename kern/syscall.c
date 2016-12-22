@@ -331,7 +331,59 @@ static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
+	struct Env *e_recv;
+	// dst env doesn't currently exist
+	if (envid2env(envid, &e_recv, false) != 0) {
+		return -E_BAD_ENV;
+	}
+	// dst env is not currently blocked
+	if (!e_recv->env_ipc_recving) {
+		return -E_IPC_NOT_RECV;
+	}
+	// srcva < UTOP but srcva is mot page-aligned
+	if ((uint32_t)srcva < UTOP && (uint32_t)srcva % PGSIZE != 0) {
+		cprintf("sys_ipc_try_send: srcva is not page-aligned\n");
+		return -E_INVAL;
+	}
+	// srcva < UTOP and perm is inappropriate
+	if ((uint32_t)srcva < UTOP) {
+		if ((perm & PTE_U) != PTE_U) {
+			return -E_INVAL;
+		}
+		if ((perm & PTE_P) != PTE_P) {
+			return -E_INVAL;
+		}
+		if ((perm & ~PTE_SYSCALL) != 0) {
+			return -E_INVAL;
+		}
+	}
+	// srcva < UTOP but srcva is not mapped in the caller's address space.
+	pte_t *pte;
+	struct PageInfo *pgInfo;
+	pgInfo = page_lookup(curenv->env_pgdir, srcva, &pte);
+	if ((uint32_t)srcva < UTOP && pgInfo == NULL) {
+		return -E_INVAL;
+	}
+	// (perm & PTE_W), but srcva is read-only in the current environment's address space.
+	if ((perm & PTE_W) && (*pte & PTE_W) == 0) {
+		return -E_INVAL;
+	}
+	int ret;
+	if ((uint32_t)e_recv->env_ipc_dstva < UTOP && (uint32_t)srcva < UTOP) {
+		ret = page_insert(e_recv->env_pgdir, pgInfo, e_recv->env_ipc_dstva, perm);
+		if (ret != 0) {
+			// there's not enough memory to map srcva in envid's address space.
+			return -E_NO_MEM;
+		}
+		e_recv->env_ipc_perm = perm;
+	} else {	// doesn't transfer page mapping
+		e_recv->env_ipc_perm = 0;
+	}
+	e_recv->env_ipc_recving = false;
+	e_recv->env_ipc_from = curenv->env_id;
+	e_recv->env_ipc_value = value;
+	e_recv->env_status = ENV_RUNNABLE;
+	return 0;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -349,7 +401,15 @@ static int
 sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
+	if ((uint32_t)dstva < UTOP && (uint32_t)dstva % PGSIZE != 0) {
+		cprintf("sys_ipc_recv: dstva is not page-aligned\n");
+		return -E_INVAL;
+	}
+	curenv->env_ipc_recving = true;
+	curenv->env_ipc_dstva = dstva;
+	curenv->env_status = ENV_NOT_RUNNABLE;
+	curenv->env_tf.tf_regs.reg_eax = 0;
+	sched_yield();
 	return 0;
 }
 
@@ -405,6 +465,14 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		}
 		case SYS_env_set_pgfault_upcall: {
 			ret = sys_env_set_pgfault_upcall((envid_t)a1, (void *)a2);
+			break;
+		}
+		case SYS_ipc_recv: {
+			ret = sys_ipc_recv((void *)a1);
+			break;
+		}
+		case SYS_ipc_try_send: {
+			ret = sys_ipc_try_send(a1, a2, (void *)a3, a4);
 			break;
 		}
 		default:

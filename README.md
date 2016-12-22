@@ -26,3 +26,5 @@ In JOS, individual environments do not have their own kernel stacks, there can b
  + implement Copy-on-Write Fork
    + on _fork()_ the kernel only copy the address space __mappings__ not its contents and mark writable and COW pages as COW pages.
  + implement clock interrupts. In JOS, external device interrupts are always _disabled_ when in the kernel and enabled when in user space. controlled by FL_IF flag bit of %eflags register.
+ + implement Inter-Process communication
+   + two sys function sys_ipc_recv and sys_ipc_try_send. To receive a msg, an process calls sys_ipc_recv, the current process will be de-scheduled and doesn't run again until a msg has been received. Now any other process can send it a msg by calling sys_ipc_try_send. a 32-bit int and an optional page mapping can be transferred between two processes.
