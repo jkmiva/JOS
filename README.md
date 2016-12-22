@@ -24,4 +24,5 @@ In JOS, individual environments do not have their own kernel stacks, there can b
  + implement Round-Robin scheduling
  + add system calls for environment creation
  + implement Copy-on-Write Fork
-   + on _fork()_ the kernel only copy the address space __mappings__ not its contents and mark the pages __read-only__.
+   + on _fork()_ the kernel only copy the address space __mappings__ not its contents and mark writable and COW pages as COW pages.
+ + implement clock interrupts. In JOS, external device interrupts are always _disabled_ when in the kernel and enabled when in user space. controlled by FL_IF flag bit of %eflags register.
