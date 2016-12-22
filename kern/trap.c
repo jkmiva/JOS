@@ -131,7 +131,7 @@ trap_init(void)
 	SETGATE(idt[19], 0, GD_KT, vector_19, 0);
 
 	SETGATE(idt[48], 0, GD_KT, vector_48, 3);
-
+	// IRQ
 	SETGATE(idt[32], 0, GD_KT, vector_32, 0);
 	SETGATE(idt[33], 0, GD_KT, vector_33, 0);
 	SETGATE(idt[36], 0, GD_KT, vector_36, 0);
