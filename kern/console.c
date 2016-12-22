@@ -179,10 +179,10 @@ cga_putc(int c)
 		}
 		break;
 	case '\n':
-		crt_pos += CRT_COLS;
+		crt_pos += CRT_COLS; // change line, advance crt_pos with 80 columns
 		/* fallthru */
 	case '\r':
-		crt_pos -= (crt_pos % CRT_COLS);
+		crt_pos -= (crt_pos % CRT_COLS); // go to fist position of current line
 		break;
 	case '\t':
 		cons_putc(' ');
@@ -197,6 +197,9 @@ cga_putc(int c)
 	}
 
 	// What is the purpose of this?
+	// lab_1_e_8
+	// default size of cga/vga is 80 columns * 25 rows, if pos exceed the max position
+	// delete the first row, lift up following rows, empty the last row we just get.
 	if (crt_pos >= CRT_SIZE) {
 		int i;
 

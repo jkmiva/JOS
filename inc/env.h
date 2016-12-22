@@ -9,6 +9,9 @@
 
 typedef int32_t envid_t;
 
+//
+// ************** environment is just an alias of PROCESS ************** 
+//
 // An environment ID 'envid_t' has three parts:
 //
 // +1+---------------21-----------------+--------10--------+
