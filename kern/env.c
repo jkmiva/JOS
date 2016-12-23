@@ -435,6 +435,10 @@ env_create(uint8_t *binary, enum EnvType type)
 	if (ret != 0) {
 		panic("env_alloc: %e", ret);
 	}
+	// enable I/O access if it is fs env
+	if (type == ENV_TYPE_FS) {
+		e->env_tf.tf_eflags |= FL_IOPL_3;
+	}
 	load_icode(e, binary);
 	e->env_type = type;
 }
