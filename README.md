@@ -62,3 +62,4 @@ Most UNIX file systems divide disk space into _inode regions_ and _data regions_
 
 ```
  + implement spawn processes and sharing ability across fork and spawn
+ + implement shell redirection
