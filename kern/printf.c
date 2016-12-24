@@ -9,7 +9,7 @@
 static void
 putch(int ch, int *cnt)
 {
-	cputchar(ch);
+	cputchar(ch);  // -> cons_putc() ->
 	*cnt++;
 }
 
@@ -34,4 +34,3 @@ cprintf(const char *fmt, ...)
 
 	return cnt;
 }
-
