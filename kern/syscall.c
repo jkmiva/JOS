@@ -377,7 +377,9 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 		return -E_INVAL;
 	}
 	// (perm & PTE_W), but srcva is read-only in the current environment's address space.
-	if ((perm & PTE_W) && (*pte & PTE_W) == 0) {
+	// fix a bug... also need to check srcva < UTOP, for example, if srcva=UTOP, it will return -E_INVAL
+	// while it should transfer nothing and do normal operation and return 0.
+	if ((uint32_t)srcva < UTOP && (perm & PTE_W) && (*pte & PTE_W) == 0) {
 		return -E_INVAL;
 	}
 	int ret;
