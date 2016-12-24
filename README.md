@@ -29,3 +29,35 @@ In JOS, individual environments do not have their own kernel stacks, there can b
  + implement clock interrupts. In JOS, external device interrupts are always _disabled_ when in the kernel and enabled when in user space. controlled by FL_IF flag bit of %eflags register.
  + implement Inter-Process communication
    + two sys function sys_ipc_recv and sys_ipc_try_send. To receive a msg, an process calls sys_ipc_recv, the current process will be de-scheduled and doesn't run again until a msg has been received. Now any other process can send it a msg by calling sys_ipc_try_send. a 32-bit int and an optional page mapping can be transferred between two processes.
+
+
+### lab5 File system, Spawn and Shell
+* File system
+Most UNIX file systems divide disk space into _inode regions_ and _data regions_. In JOS, we don't have the concept of _inode_ which means we also won't support hard links, symbolic links. JOS will simply store all of a file's meta-data within the (one and only) directory entry describing that file.
+ + enable disk access for fs env
+ + set up a 3GB block cache for fs env in a form of _demand paging_.
+ + add block operations
+ + link block number with virtual memory address
+ + implement file system interface
+ ```
+	  Regular env           FS env
+       +---------------+   +---------------+
+       |      read     |   |   file_read   |
+       |   (lib/fd.c)  |   |   (fs/fs.c)   |
+    ...|.......|.......|...|.......^.......|...............
+       |       v       |   |       |       | RPC mechanism
+       |  devfile_read |   |  serve_read   |
+       |  (lib/file.c) |   |  (fs/serv.c)  |
+       |       |       |   |       ^       |
+       |       v       |   |       |       |
+       |     fsipc     |   |     serve     |
+       |  (lib/file.c) |   |  (fs/serv.c)  |
+       |       |       |   |       ^       |
+       |       v       |   |       |       |
+       |   ipc_send    |   |   ipc_recv    |
+       |       |       |   |       ^       |
+       +-------|-------+   +-------|-------+
+	       |                   |
+	       +-------------------+
+
+```

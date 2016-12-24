@@ -26,7 +26,7 @@ static struct Env *env_free_list;	// Free environment list
 // Set up global descriptor table (GDT) with separate segments for
 // kernel mode and user mode.  Segments serve many purposes on the x86.
 // We don't use any of their memory-mapping capabilities, but we need
-// them to switch privilege levels. 
+// them to switch privilege levels.
 //
 // The kernel and user segments are identical except for the DPL.
 // To load the SS register, the CPL must equal the DPL.  Thus,
@@ -195,11 +195,11 @@ env_setup_vm(struct Env *e)
 	// LAB 3: Your code here.
 	e->env_pgdir = page2kva(p);
 	p->pp_ref++;
-	
+
 	memmove(e->env_pgdir, kern_pgdir, PGSIZE);	// copy from kern_pgdir
-	
-	
-	//memset(e->env_pgdir, 0, 4 * PDX(UTOP));	// clear content below UTOP 
+
+
+	//memset(e->env_pgdir, 0, 4 * PDX(UTOP));	// clear content below UTOP
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -277,7 +277,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	env_free_list = e->env_link;
 	*newenv_store = e;
 
-	cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	// cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
 	return 0;
 }
 
@@ -295,7 +295,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 	// (But only if you need it for load_icode.)
 	void *rstart = ROUNDDOWN(va, PGSIZE);
 	void *rend = ROUNDUP(va+len, PGSIZE);
-	
+
 	struct PageInfo *pgInfo;
 	while (rstart < rend) {
 		pgInfo = page_alloc(false);	// does not zero
@@ -307,9 +307,9 @@ region_alloc(struct Env *e, void *va, size_t len)
 		}
 		rstart += PGSIZE;
 	}
-	
-	
-	
+
+
+
 	//
 	// Hint: It is easier to use region_alloc if the caller can pass
 	//   'va' and 'len' values that are not page-aligned.
@@ -375,22 +375,22 @@ load_icode(struct Env *e, uint8_t *binary)
 	if (elf->e_magic != ELF_MAGIC) {
 		panic("invalid elf file!");
 	}
-	
+
 	lcr3(PADDR(e->env_pgdir));	// following memory operation need the new user environment's pgdir
 	// entry point
 	e->env_tf.tf_eip = elf->e_entry;
-	
+
 	struct Proghdr *ph, *eph;
 	// load each program segment (ignores ph flags)
 	ph = (struct Proghdr *) ((uint8_t *) elf + elf->e_phoff);	// e_phoff is start offset of program headers
 	eph = ph + elf->e_phnum;
 	for (; ph < eph; ph++) {
-		
+
 		if (ph->p_type != ELF_PROG_LOAD) continue;	// only load loadable segments
 		assert(ph->p_filesz <= ph->p_memsz);	// The ELF header should have ph->p_filesz <= ph->p_memsz
-		
+
 		region_alloc(e, (void *)ph->p_va, ph->p_memsz);
-		
+
 		/* The ph->p_filesz bytes from the ELF binary, starting at
 		 * 'binary + ph->p_offset', should be copied to virtual address
 		 * ph->p_va.
@@ -405,10 +405,10 @@ load_icode(struct Env *e, uint8_t *binary)
 	// at virtual address USTACKTOP - PGSIZE.
 	// LAB 3: Your code here.
 	region_alloc(e, (void *)(USTACKTOP-PGSIZE), PGSIZE);
-	
+
 	// restore %cr3 to contain kern_pgdir after loading ELF of new environment
 	lcr3(PADDR(kern_pgdir));
-	
+
 }
 
 //
@@ -425,11 +425,19 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+
+	// If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
+	// LAB 5: Your code here.
+
 	envid_t parentID = 0;
 	struct Env *e;
 	int ret = env_alloc(&e, parentID);
 	if (ret != 0) {
 		panic("env_alloc: %e", ret);
+	}
+	// enable I/O access if it is fs env
+	if (type == ENV_TYPE_FS) {
+		e->env_tf.tf_eflags |= FL_IOPL_3;
 	}
 	load_icode(e, binary);
 	e->env_type = type;
@@ -452,7 +460,7 @@ env_free(struct Env *e)
 		lcr3(PADDR(kern_pgdir));
 
 	// Note the environment's demise.
-	cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	// cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
 
 	// Flush all mapped pages in the user portion of the address space
 	static_assert(UTOP % PTSIZE == 0);
@@ -570,9 +578,8 @@ env_run(struct Env *e)
 	curenv->env_status = ENV_RUNNING;
 	curenv->env_runs++;
 	lcr3(PADDR(curenv->env_pgdir));
-	
+
 	unlock_kernel();
-	
+
 	env_pop_tf(&(curenv->env_tf));
 }
-

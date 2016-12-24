@@ -187,7 +187,7 @@ trap_init_percpu(void)
 
 	// Load the TSS selector from memory address(like other segment selectors, the
 	// bottom three bits are special; we leave them 0)
-	
+
 	// alternative: ltr(GD_TSS0 + cpunum() *sizeof(struct Segdesc)) 8 bytes each segdesc
 	ltr(GD_TSS0 + (cpunum() << 3));
 	lidt(&idt_pd);
@@ -257,6 +257,9 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
+
+	// Handle keyboard and serial interrupts.
+	// LAB 5: Your code here.
 
 
 	switch (tf->tf_trapno) {
@@ -385,13 +388,14 @@ page_fault_handler(struct Trapframe *tf)
 	// we branch to the page fault upcall recursively, pushing another
 	// page fault stack frame on top of the user exception stack.
 	//
-	// The trap handler needs one word of scratch space at the top of the
-	// trap-time stack in order to return.  In the non-recursive case, we
-	// don't have to worry about this because the top of the regular user
-	// stack is free.  In the recursive case, this means we have to leave
-	// an extra word between the current top of the exception stack and
-	// the new stack frame because the exception stack _is_ the trap-time
-	// stack.
+	// It is convenient for our code which returns from a page fault
+	// (lib/pfentry.S) to have one word of scratch space at the top of the
+	// trap-time stack; it allows us to more easily restore the eip/esp. In
+	// the non-recursive case, we don't have to worry about this because
+	// the top of the regular user stack is free.  In the recursive case,
+	// this means we have to leave an extra word between the current top of
+	// the exception stack and the new stack frame because the exception
+	// stack _is_ the trap-time stack.
 	//
 	// If there's no page fault upcall, the environment didn't allocate a
 	// page for its exception stack or can't write to it, or the exception
@@ -423,7 +427,7 @@ page_fault_handler(struct Trapframe *tf)
 	}
 	// check permission
 	user_mem_assert(curenv, (void *)stack_top, sizeof(struct UTrapframe), PTE_W | PTE_U);
-	
+
 	struct UTrapframe *utf = (struct UTrapframe *)stack_top;
 	utf->utf_fault_va = fault_va;
 	utf->utf_err = tf->tf_err;
@@ -431,7 +435,7 @@ page_fault_handler(struct Trapframe *tf)
 	utf->utf_eip = tf->tf_eip;
 	utf->utf_eflags = tf->tf_eflags;
 	utf->utf_esp = tf->tf_esp;
-	
+
 	tf->tf_esp = (uintptr_t)stack_top;
 	tf->tf_eip = (uintptr_t)curenv->env_pgfault_upcall;	// entry point of pagefault handler
 	env_run(curenv);
