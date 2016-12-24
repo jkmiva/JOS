@@ -178,7 +178,9 @@ trap_init_percpu(void)
 	// when we trap to the kernel.
 	//ts.ts_esp0 = KSTACKTOP;
 	//ts.ts_ss0 = GD_KD;
-	//ts.ts_iomb = sizeof(struct Taskstate);
+	thiscpu->cpu_ts.ts_iomb = sizeof(struct Taskstate); // disable access permission of the port 
+														// that IN/OUT will use
+														// see faultio.c
 
 	// Initialize the TSS slot of the gdt.
 	gdt[(GD_TSS0 >> 3) + cpunum()] = SEG16(STS_T32A, (uint32_t) (&(thiscpu->cpu_ts)),
@@ -286,6 +288,14 @@ trap_dispatch(struct Trapframe *tf)
 		case IRQ_OFFSET+IRQ_TIMER: {
 			lapic_eoi();	// ack interrupt through lapic
 			sched_yield();
+			break;
+		}
+		case IRQ_OFFSET+IRQ_KBD: {
+			kbd_intr();
+			break;
+		}
+		case IRQ_OFFSET+IRQ_SERIAL: {
+			serial_intr();
 			break;
 		}
 		default: {
