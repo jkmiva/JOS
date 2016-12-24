@@ -130,7 +130,7 @@ fs_init(void)
 // if necessary.
 //
 // Returns:
-//	0 on success (but note that *ppdiskbno might equal 0).
+//	0 on success (but note that *(*ppdiskbno) might equal 0).
 //	-E_NOT_FOUND if the function needed to allocate an indirect block, but
 //		alloc was 0.
 //	-E_NO_DISK if there's no space on the disk for an indirect block.

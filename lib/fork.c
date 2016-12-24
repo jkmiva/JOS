@@ -71,7 +71,16 @@ duppage(envid_t envid, unsigned pn)
 
 	// LAB 4: Your code here.
 	void * addr = (void *)(pn * PGSIZE);
-	if ((uvpt[pn] & (PTE_W | PTE_COW)) != 0) {
+	// mark it that can be directly modified to enable sharing
+	if (uvpt[pn] & PTE_SHARE) {
+		r = sys_page_map(thisenv->env_id, addr,
+						 envid, addr,
+						 uvpt[pn] & PTE_SYSCALL);
+		if (r != 0) {
+			panic("duppage: fail to map page");
+		}
+	}
+	else if ((uvpt[pn] & (PTE_W | PTE_COW)) != 0) {
 		// first map into child's address space
 		r = sys_page_map(thisenv->env_id, addr,
 						 envid, addr,
